@@ -1,0 +1,27 @@
+name: MergeMetrics Dashboard
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run MergeMetrics
+        uses: jbsommeling/merge-metrics@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit and push dashboard
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update MergeMetrics dashboard"
+          file_pattern: "docs/* README.md"
