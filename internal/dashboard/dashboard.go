@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -123,14 +124,19 @@ func writeHTML(data *DashboardData, outputDir string) error {
 		"formatPercent":  formatPercent,
 		"barWidth":       barWidth,
 	}
-	tmpl := template.Must(template.New("dashboard").Funcs(funcMap).Parse(htmlTemplate))
-	f, err := os.Create(filepath.Join(outputDir, "index.html"))
+	tmpl, err := template.New("dashboard").Funcs(funcMap).Parse(htmlTemplate)
 	if err != nil {
-		return fmt.Errorf("create index.html: %w", err)
+		return fmt.Errorf("parsing template: %w", err)
 	}
-	defer f.Close()
-	if err := tmpl.Execute(f, data); err != nil {
-		return fmt.Errorf("render index.html: %w", err)
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("executing template: %w", err)
+	}
+
+	path := filepath.Join(outputDir, "index.html")
+	if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("writing index.html: %w", err)
 	}
 	return nil
 }

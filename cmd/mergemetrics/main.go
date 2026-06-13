@@ -120,7 +120,9 @@ func main() {
 	// Fetch reviews and requested reviewers for open PRs.
 	reviewsMap := make(map[int][]githubclient.Review)
 	requestedReviewersMap := make(map[int][]githubclient.ReviewRequest)
-	allPRs := append(openPRs, closedPRs...)
+	allPRs := make([]githubclient.PullRequest, 0, len(openPRs)+len(closedPRs))
+	allPRs = append(allPRs, openPRs...)
+	allPRs = append(allPRs, closedPRs...)
 
 	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(10)

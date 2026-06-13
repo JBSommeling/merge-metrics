@@ -329,16 +329,16 @@ func (c *Client) ListCommits(ctx context.Context, owner, repo string, since time
 		if err != nil {
 			return nil, fmt.Errorf("listing commits: %w", err)
 		}
-		for _, c := range commits {
+		for _, rc := range commits {
 			commit := Commit{
-				SHA: c.GetSHA(),
+				SHA: rc.GetSHA(),
 			}
-			if c.Commit != nil {
-				commit.Message = c.Commit.GetMessage()
-				if c.Commit.Author != nil {
-					commit.Author = c.Commit.Author.GetName()
-					if c.Commit.Author.Date != nil {
-						commit.Date = c.Commit.Author.Date.Time
+			if rc.Commit != nil {
+				commit.Message = rc.Commit.GetMessage()
+				if rc.Commit.Author != nil {
+					commit.Author = rc.Commit.Author.GetName()
+					if rc.Commit.Author.Date != nil {
+						commit.Date = rc.Commit.Author.Date.Time
 					}
 				}
 			}

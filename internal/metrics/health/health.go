@@ -41,6 +41,20 @@ type Input struct {
 
 // Calculate computes an overall repository health score from the provided inputs.
 func Calculate(input *Input, weights config.WeightConfig, thresholds config.ThresholdConfig) *Result {
+	// Safe defaults for nil inputs.
+	if input.Reviews == nil {
+		input.Reviews = &reviews.Result{}
+	}
+	if input.BusFactor == nil {
+		input.BusFactor = &busfactor.Result{}
+	}
+	if input.PRBottleneck == nil {
+		input.PRBottleneck = &prbottleneck.Result{}
+	}
+	if input.Releases == nil {
+		input.Releases = &releases.Result{}
+	}
+
 	categories := make([]ScoreCategory, 0, 7)
 
 	// 1. Review Speed
