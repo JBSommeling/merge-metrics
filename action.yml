@@ -1,5 +1,5 @@
 name: 'MergeMetrics Dashboard'
-description: 'Automated repository health analysis — PR bottlenecks, reviewer load, bus factor, release frequency, and a composite health score delivered as a static dashboard.'
+description: 'Automated repository health analysis delivered as a static dashboard.'
 branding:
   icon: 'activity'
   color: 'blue'
