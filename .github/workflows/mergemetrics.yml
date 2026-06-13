@@ -2,7 +2,7 @@ name: MergeMetrics Dashboard
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # Daily at 6am UTC
+    - cron: '0 6 * * *'
   workflow_dispatch: {}
 
 permissions:
@@ -15,18 +15,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Run MergeMetrics
+        uses: jbsommeling/merge-metrics@main
         with:
-          go-version: '1.22'
-
-      - name: Install MergeMetrics
-        run: go install github.com/jbsommeling/merge-metrics/cmd/mergemetrics@latest
-
-      - name: Generate dashboard
-        run: mergemetrics generate
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and push dashboard
         uses: stefanzweifel/git-auto-commit-action@v5

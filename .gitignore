@@ -1,4 +1,5 @@
 bin/
+mergemetrics
 *.exe
 .DS_Store
 .idea/

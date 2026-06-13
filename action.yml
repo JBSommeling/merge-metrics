@@ -1,0 +1,33 @@
+name: 'MergeMetrics'
+description: 'Generate a repository health dashboard with engineering metrics'
+branding:
+  icon: 'activity'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'GitHub token for API access'
+    required: false
+    default: ${{ github.token }}
+  config:
+    description: 'Path to .mergemetrics.yml config file'
+    required: false
+    default: '.mergemetrics.yml'
+  output-dir:
+    description: 'Output directory for dashboard files'
+    required: false
+    default: 'docs'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - 'generate'
+    - '--token'
+    - ${{ inputs.token }}
+    - '--config'
+    - ${{ inputs.config }}
+    - '--output-dir'
+    - ${{ inputs.output-dir }}
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
