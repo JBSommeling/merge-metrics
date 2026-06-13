@@ -28,6 +28,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: write
+  pull-requests: write
 jobs:
   update-dashboard:
     runs-on: ubuntu-latest
@@ -36,15 +37,21 @@ jobs:
       - uses: jbsommeling/merge-metrics@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: peter-evans/create-pull-request@v7
         with:
-          commit_message: "chore: update MergeMetrics dashboard"
-          file_pattern: "docs/* README.md"
+          commit-message: "chore: update MergeMetrics dashboard"
+          title: "chore: update MergeMetrics dashboard"
+          body: "Automated dashboard update by MergeMetrics."
+          branch: mergemetrics/update-dashboard
+          delete-branch: true
+          add-paths: |
+            docs/*
+            README.md
 ```
 
 Then enable GitHub Pages for the `docs/` folder in your repository settings (Settings > Pages > Source: Deploy from a branch, Branch: main, Folder: /docs). Your dashboard will be live at `https://<owner>.github.io/<repo>/`.
 
-The workflow runs daily at 06:00 UTC and can also be triggered manually from the Actions tab.
+The workflow runs daily at 06:00 UTC and can also be triggered manually from the Actions tab. If your repository has branch protection rules, the workflow opens a pull request instead of pushing directly.
 
 ### As a CLI
 
@@ -72,7 +79,7 @@ Available flags:
 4. Computes the composite health score from the four engine outputs plus open issue count and median PR size.
 5. Generates a static HTML dashboard and structured JSON data files.
 6. Writes all output to the `docs/` folder and, unless disabled, updates the repository README between sentinel comment markers with the current health badge.
-7. In GitHub Action mode, the `stefanzweifel/git-auto-commit-action` step commits the updated files back to the repository automatically.
+7. In GitHub Action mode, the `peter-evans/create-pull-request` step opens a pull request with the updated dashboard files. This approach works with repositories that have branch protection rules.
 
 ## Architecture
 
