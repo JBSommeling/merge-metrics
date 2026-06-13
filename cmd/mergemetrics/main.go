@@ -59,11 +59,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 2. Auto-detect owner/repo from git remote if not provided.
+	// 2. Auto-detect owner/repo if not provided.
 	if *owner == "" || *repo == "" {
+		// Try GITHUB_REPOSITORY env var first (available in GitHub Actions).
+		if ghRepo := os.Getenv("GITHUB_REPOSITORY"); ghRepo != "" {
+			parts := strings.SplitN(ghRepo, "/", 2)
+			if len(parts) == 2 {
+				if *owner == "" {
+					*owner = parts[0]
+				}
+				if *repo == "" {
+					*repo = parts[1]
+				}
+			}
+		}
+	}
+	if *owner == "" || *repo == "" {
+		// Fall back to git remote detection.
 		detectedOwner, detectedRepo, err := detectRepo()
 		if err != nil {
-			log.Fatalf("auto-detect owner/repo: %v\nUse --owner and --repo to specify them explicitly", err)
+			log.Fatalf("auto-detect owner/repo: %v\nUse --owner and --repo, set GITHUB_REPOSITORY, or run from a git repository with a GitHub remote", err)
 		}
 		if *owner == "" {
 			*owner = detectedOwner
