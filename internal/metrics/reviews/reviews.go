@@ -60,6 +60,9 @@ func Analyze(prs []github.PullRequest, reviewsMap map[int][]github.Review, analy
 			}
 			// This is the first non-author review.
 			responseTime := rev.SubmittedAt.Sub(pr.CreatedAt)
+			if rev.SubmittedAt.IsZero() || responseTime <= 0 {
+				continue // skip to next PR
+			}
 			reviewTimes = append(reviewTimes, responseTime)
 
 			if _, ok := reviewerMap[rev.User]; !ok {

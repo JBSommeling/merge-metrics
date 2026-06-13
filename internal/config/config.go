@@ -247,5 +247,9 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("config: thresholds.pr_size_poor must be > 0 (got %d)", c.Thresholds.PRSizePoor)
 	}
 
+	if c.Thresholds.PRSizeGood >= c.Thresholds.PRSizePoor {
+		return fmt.Errorf("pr_size_good (%d) must be less than pr_size_poor (%d)", c.Thresholds.PRSizeGood, c.Thresholds.PRSizePoor)
+	}
+
 	return nil
 }

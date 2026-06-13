@@ -37,11 +37,14 @@ func Analyze(commits []github.Commit, analysisPeriodDays int) *Result {
 
 	// Step 1: group commits by author.
 	counts := make(map[string]int)
+	total := 0
 	for _, c := range commits {
+		if c.Author == "" {
+			continue
+		}
 		counts[c.Author]++
+		total++
 	}
-
-	total := len(commits)
 
 	// Step 2: compute shares.
 	contributors := make([]ContributorShare, 0, len(counts))

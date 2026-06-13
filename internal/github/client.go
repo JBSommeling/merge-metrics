@@ -440,19 +440,21 @@ func (c *Client) ListTags(ctx context.Context, owner, repo string) ([]Tag, error
 // GetRepository returns metadata for the given repository.
 func (c *Client) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
 	var (
-		r    *gogithub.Repository
-		resp *gogithub.Response
-		err  error
+		r       *gogithub.Repository
+		resp    *gogithub.Response
+		err     error
+		retries int
 	)
 	for {
 		r, resp, err = c.gh.Repositories.Get(ctx, owner, repo)
-		if err != nil {
-			if resp != nil && waitForRateLimit(resp) {
-				continue
-			}
-			return nil, err
+		if err != nil && resp != nil && retries < 3 && waitForRateLimit(resp) {
+			retries++
+			continue
 		}
 		break
+	}
+	if err != nil {
+		return nil, err
 	}
 	return &Repository{
 		Name:            r.GetName(),
