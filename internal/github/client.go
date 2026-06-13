@@ -333,13 +333,15 @@ func (c *Client) ListCommits(ctx context.Context, owner, repo string, since time
 			commit := Commit{
 				SHA: rc.GetSHA(),
 			}
+			if rc.Author != nil {
+				commit.Author = rc.Author.GetLogin()
+			} else if rc.Commit != nil && rc.Commit.Author != nil {
+				commit.Author = rc.Commit.Author.GetName()
+			}
 			if rc.Commit != nil {
 				commit.Message = rc.Commit.GetMessage()
-				if rc.Commit.Author != nil {
-					commit.Author = rc.Commit.Author.GetName()
-					if rc.Commit.Author.Date != nil {
-						commit.Date = rc.Commit.Author.Date.Time
-					}
+				if rc.Commit.Author != nil && rc.Commit.Author.Date != nil {
+					commit.Date = rc.Commit.Author.Date.Time
 				}
 			}
 			all = append(all, commit)
