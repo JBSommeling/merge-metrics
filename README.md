@@ -1,6 +1,6 @@
 # MergeMetrics
 
-Lightweight GitHub repository health dashboard — no SaaS, no accounts, just GitHub.
+Automated repository health analysis — PR bottlenecks, reviewer load, bus factor, release frequency, and a composite health score delivered as a static dashboard. No SaaS, no accounts, just GitHub.
 
 ## What is MergeMetrics?
 
