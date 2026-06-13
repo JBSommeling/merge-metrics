@@ -37,6 +37,8 @@ jobs:
       - uses: jbsommeling/merge-metrics@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fix file ownership
+        run: sudo chown -R $(id -u):$(id -g) .
       - uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore: update MergeMetrics dashboard"
