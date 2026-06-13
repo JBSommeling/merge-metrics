@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jbsommeling/merge-metrics/internal/config"
@@ -21,6 +22,7 @@ import (
 	"github.com/jbsommeling/merge-metrics/internal/metrics/releases"
 	"github.com/jbsommeling/merge-metrics/internal/metrics/reviews"
 	"github.com/jbsommeling/merge-metrics/internal/publisher"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -120,20 +122,40 @@ func main() {
 	requestedReviewersMap := make(map[int][]githubclient.ReviewRequest)
 	allPRs := append(openPRs, closedPRs...)
 
-	for _, pr := range allPRs {
-		revs, err := client.ListPullRequestReviews(ctx, *owner, *repo, pr.Number)
-		if err != nil {
-			log.Fatalf("fetch reviews for PR #%d: %v", pr.Number, err)
-		}
-		reviewsMap[pr.Number] = revs
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(10)
+	var mu sync.Mutex
 
-		if pr.State == "open" {
-			reqReviewers, err := client.ListRequestedReviewers(ctx, *owner, *repo, pr.Number)
+	for _, pr := range allPRs {
+		pr := pr
+		g.Go(func() error {
+			revs, err := client.ListPullRequestReviews(gctx, *owner, *repo, pr.Number)
 			if err != nil {
-				log.Fatalf("fetch requested reviewers for PR #%d: %v", pr.Number, err)
+				return fmt.Errorf("fetching reviews for PR #%d: %w", pr.Number, err)
 			}
-			requestedReviewersMap[pr.Number] = reqReviewers
-		}
+			mu.Lock()
+			reviewsMap[pr.Number] = revs
+			mu.Unlock()
+			return nil
+		})
+	}
+
+	for _, pr := range openPRs {
+		pr := pr
+		g.Go(func() error {
+			rr, err := client.ListRequestedReviewers(gctx, *owner, *repo, pr.Number)
+			if err != nil {
+				return fmt.Errorf("fetching reviewers for PR #%d: %w", pr.Number, err)
+			}
+			mu.Lock()
+			requestedReviewersMap[pr.Number] = rr
+			mu.Unlock()
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		log.Fatalf("Error fetching PR details: %v", err)
 	}
 
 	commitLookbackSince := time.Now().AddDate(0, 0, -cfg.CommitLookbackDays)
@@ -152,7 +174,7 @@ func main() {
 	// 7. Run all metric engines.
 	fmt.Fprintln(os.Stderr, "Analyzing metrics...")
 
-	prBottleneckResult := prbottleneck.Analyze(openPRs, reviewsMap, requestedReviewersMap, cfg.StalePRThresholdDays)
+	prBottleneckResult := prbottleneck.Analyze(openPRs, reviewsMap, requestedReviewersMap, cfg.Thresholds.StalePRDays)
 	busFactorResult := busfactor.Analyze(commits, cfg.CommitLookbackDays)
 	reviewsResult := reviews.Analyze(allPRs, reviewsMap, cfg.PRLookbackDays)
 	releasesResult := releases.Analyze(releaseList)

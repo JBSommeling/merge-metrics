@@ -46,10 +46,15 @@ func Analyze(prs []github.PullRequest, reviewsMap map[int][]github.Review, analy
 			continue
 		}
 
-		reviews := reviewsMap[pr.Number]
+		revs := reviewsMap[pr.Number]
+
+		// Sort reviews chronologically so we pick the earliest non-author review.
+		sort.Slice(revs, func(i, j int) bool {
+			return revs[i].SubmittedAt.Before(revs[j].SubmittedAt)
+		})
 
 		// Find the first non-author review for this PR.
-		for _, rev := range reviews {
+		for _, rev := range revs {
 			if rev.User == pr.User {
 				continue
 			}

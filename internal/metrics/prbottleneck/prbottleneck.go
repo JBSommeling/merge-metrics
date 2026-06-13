@@ -127,17 +127,17 @@ func Analyze(
 
 // prStatus determines the status of a PR based on its reviews and requested reviewers.
 func prStatus(reviews []github.Review, requestedReviewers []github.ReviewRequest) string {
-	// waiting_for_review: has requested reviewers but no reviews yet.
-	if len(requestedReviewers) > 0 && len(reviews) == 0 {
-		return "waiting_for_review"
-	}
-
-	// waiting_for_author: latest review is CHANGES_REQUESTED.
+	// waiting_for_author takes priority: latest review is CHANGES_REQUESTED.
 	if len(reviews) > 0 {
 		latest := latestReview(reviews)
 		if latest.State == "CHANGES_REQUESTED" {
 			return "waiting_for_author"
 		}
+	}
+
+	// waiting_for_review: has pending review requests (regardless of existing reviews).
+	if len(requestedReviewers) > 0 {
+		return "waiting_for_review"
 	}
 
 	return "idle"

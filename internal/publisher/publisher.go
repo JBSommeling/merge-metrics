@@ -32,25 +32,44 @@ func badgeColor(band string) string {
 	}
 }
 
+// isValidURL returns true if u starts with "https://" or "http://".
+func isValidURL(u string) bool {
+	return strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "http://")
+}
+
 // generateSection builds the MergeMetrics markdown block including sentinels.
 func generateSection(update *ReadmeUpdate) string {
 	color := badgeColor(update.Band)
-	pagesURL := update.PagesURL
 	date := update.UpdatedAt.Format("2006-01-02")
 	score := fmt.Sprintf("%d%%2F100", update.HealthScore)
 
-	return fmt.Sprintf(`%s
+	if isValidURL(update.PagesURL) {
+		pagesURL := update.PagesURL
+		return fmt.Sprintf(`%s
 [![Repository Health](https://img.shields.io/badge/Health-%s-%s)](%s)
 
 📊 [View Repository Dashboard](%s)
 
 Last updated: %s
 %s`,
+			sentinelStart,
+			score,
+			color,
+			pagesURL,
+			pagesURL,
+			date,
+			sentinelEnd,
+		)
+	}
+
+	return fmt.Sprintf(`%s
+![Repository Health](https://img.shields.io/badge/Health-%s-%s)
+
+Last updated: %s
+%s`,
 		sentinelStart,
 		score,
 		color,
-		pagesURL,
-		pagesURL,
 		date,
 		sentinelEnd,
 	)
@@ -113,7 +132,10 @@ func UpdateReadmeFile(path string, update *ReadmeUpdate) error {
 		content = string(data)
 	}
 
-	updated, _ := UpdateReadme(content, update)
+	updated, changed := UpdateReadme(content, update)
+	if !changed {
+		return nil
+	}
 
 	if err := os.WriteFile(path, []byte(updated), 0644); err != nil {
 		return fmt.Errorf("write readme: %w", err)

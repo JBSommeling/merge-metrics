@@ -10,10 +10,9 @@ import (
 
 // Config holds all MergeMetrics configuration options.
 type Config struct {
-	PRLookbackDays       int             `yaml:"pr_lookback_days"`
-	CommitLookbackDays   int             `yaml:"commit_lookback_days"`
-	StalePRThresholdDays int             `yaml:"stale_pr_threshold_days"`
-	DashboardPath        string          `yaml:"dashboard_path"`
+	PRLookbackDays     int             `yaml:"pr_lookback_days"`
+	CommitLookbackDays int             `yaml:"commit_lookback_days"`
+	DashboardPath      string          `yaml:"dashboard_path"`
 	PagesURL             string          `yaml:"pages_url"`
 	UpdateReadme         bool            `yaml:"update_readme"`
 	Weights              WeightConfig    `yaml:"weights"`
@@ -45,10 +44,9 @@ type ThresholdConfig struct {
 // Default returns a Config with all fields set to their default values.
 func Default() *Config {
 	return &Config{
-		PRLookbackDays:       90,
-		CommitLookbackDays:   180,
-		StalePRThresholdDays: 7,
-		DashboardPath:        "docs",
+		PRLookbackDays:     90,
+		CommitLookbackDays: 180,
+		DashboardPath:      "docs",
 		PagesURL:             "",
 		UpdateReadme:         true,
 		Weights: WeightConfig{
@@ -105,10 +103,9 @@ func Load(path string) (*Config, error) {
 		PRSizePoor               *int `yaml:"pr_size_poor"`
 	}
 	type partialConfig struct {
-		PRLookbackDays       *int               `yaml:"pr_lookback_days"`
-		CommitLookbackDays   *int               `yaml:"commit_lookback_days"`
-		StalePRThresholdDays *int               `yaml:"stale_pr_threshold_days"`
-		DashboardPath        *string            `yaml:"dashboard_path"`
+		PRLookbackDays     *int               `yaml:"pr_lookback_days"`
+		CommitLookbackDays *int               `yaml:"commit_lookback_days"`
+		DashboardPath      *string            `yaml:"dashboard_path"`
 		PagesURL             *string            `yaml:"pages_url"`
 		UpdateReadme         *bool              `yaml:"update_readme"`
 		Weights              *partialWeights    `yaml:"weights"`
@@ -126,9 +123,6 @@ func Load(path string) (*Config, error) {
 	}
 	if partial.CommitLookbackDays != nil {
 		cfg.CommitLookbackDays = *partial.CommitLookbackDays
-	}
-	if partial.StalePRThresholdDays != nil {
-		cfg.StalePRThresholdDays = *partial.StalePRThresholdDays
 	}
 	if partial.DashboardPath != nil {
 		cfg.DashboardPath = *partial.DashboardPath
@@ -193,7 +187,7 @@ func Load(path string) (*Config, error) {
 // Validate checks that the configuration is coherent. It returns an error if:
 //   - weights do not sum to approximately 1.0 (within ±0.01)
 //   - any weight value is negative
-//   - PRLookbackDays, CommitLookbackDays, or StalePRThresholdDays are not > 0
+//   - PRLookbackDays or CommitLookbackDays are not > 0
 //   - any threshold value is not > 0
 func (c *Config) Validate() error {
 	// Check for negative weights.
@@ -231,9 +225,6 @@ func (c *Config) Validate() error {
 	}
 	if c.CommitLookbackDays <= 0 {
 		return fmt.Errorf("config: commit_lookback_days must be > 0 (got %d)", c.CommitLookbackDays)
-	}
-	if c.StalePRThresholdDays <= 0 {
-		return fmt.Errorf("config: stale_pr_threshold_days must be > 0 (got %d)", c.StalePRThresholdDays)
 	}
 
 	// Check threshold values are > 0.

@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -86,10 +87,12 @@ func waitForRateLimit(resp *gogithub.Response) bool {
 		return false
 	}
 	if resp.StatusCode == http.StatusForbidden && resp.Rate.Remaining == 0 {
-		resetAt := resp.Rate.Reset.Time
-		sleepDur := time.Until(resetAt)
-		if sleepDur > 0 {
-			time.Sleep(sleepDur)
+		sleepDuration := time.Until(resp.Rate.Reset.Time) + time.Second
+		if sleepDuration > 5*time.Minute {
+			sleepDuration = 5 * time.Minute
+		}
+		if sleepDuration > 0 {
+			time.Sleep(sleepDuration)
 		}
 		return true
 	}
@@ -130,19 +133,24 @@ func (c *Client) ListOpenPullRequests(ctx context.Context, owner, repo string) (
 	var all []PullRequest
 	for {
 		var (
-			prs  []*gogithub.PullRequest
-			resp *gogithub.Response
-			err  error
+			prs     []*gogithub.PullRequest
+			resp    *gogithub.Response
+			err     error
+			retries int
 		)
 		for {
 			prs, resp, err = c.gh.PullRequests.List(ctx, owner, repo, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing open pull requests: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing open pull requests: %w", err)
 		}
 		for _, pr := range prs {
 			all = append(all, mapPR(pr))
@@ -165,16 +173,21 @@ func (c *Client) ListPullRequestReviews(ctx context.Context, owner, repo string,
 			reviews []*gogithub.PullRequestReview
 			resp    *gogithub.Response
 			err     error
+			retries int
 		)
 		for {
 			reviews, resp, err = c.gh.PullRequests.ListReviews(ctx, owner, repo, number, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing pull request reviews: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing pull request reviews: %w", err)
 		}
 		for _, r := range reviews {
 			rev := Review{
@@ -207,16 +220,21 @@ func (c *Client) ListRequestedReviewers(ctx context.Context, owner, repo string,
 			reviewers *gogithub.Reviewers
 			resp      *gogithub.Response
 			err       error
+			retries   int
 		)
 		for {
 			reviewers, resp, err = c.gh.PullRequests.ListReviewers(ctx, owner, repo, number, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing requested reviewers: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing requested reviewers: %w", err)
 		}
 		for _, u := range reviewers.Users {
 			all = append(all, ReviewRequest{Login: u.GetLogin()})
@@ -246,19 +264,24 @@ func (c *Client) ListClosedPullRequests(ctx context.Context, owner, repo string,
 outer:
 	for {
 		var (
-			prs  []*gogithub.PullRequest
-			resp *gogithub.Response
-			err  error
+			prs     []*gogithub.PullRequest
+			resp    *gogithub.Response
+			err     error
+			retries int
 		)
 		for {
 			prs, resp, err = c.gh.PullRequests.List(ctx, owner, repo, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing closed pull requests: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing closed pull requests: %w", err)
 		}
 		for _, pr := range prs {
 			updatedAt := pr.GetUpdatedAt().Time
@@ -290,16 +313,21 @@ func (c *Client) ListCommits(ctx context.Context, owner, repo string, since time
 			commits []*gogithub.RepositoryCommit
 			resp    *gogithub.Response
 			err     error
+			retries int
 		)
 		for {
 			commits, resp, err = c.gh.Repositories.ListCommits(ctx, owner, repo, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing commits: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing commits: %w", err)
 		}
 		for _, c := range commits {
 			commit := Commit{
@@ -334,16 +362,21 @@ func (c *Client) ListReleases(ctx context.Context, owner, repo string) ([]Releas
 			releases []*gogithub.RepositoryRelease
 			resp     *gogithub.Response
 			err      error
+			retries  int
 		)
 		for {
 			releases, resp, err = c.gh.Repositories.ListReleases(ctx, owner, repo, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing releases: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing releases: %w", err)
 		}
 		for _, r := range releases {
 			if r.GetDraft() {
@@ -352,7 +385,6 @@ func (c *Client) ListReleases(ctx context.Context, owner, repo string) ([]Releas
 			rel := Release{
 				TagName:    r.GetTagName(),
 				Name:       r.GetName(),
-				Draft:      r.GetDraft(),
 				Prerelease: r.GetPrerelease(),
 			}
 			if r.PublishedAt != nil {
@@ -375,19 +407,24 @@ func (c *Client) ListTags(ctx context.Context, owner, repo string) ([]Tag, error
 	var all []Tag
 	for {
 		var (
-			tags []*gogithub.RepositoryTag
-			resp *gogithub.Response
-			err  error
+			tags    []*gogithub.RepositoryTag
+			resp    *gogithub.Response
+			err     error
+			retries int
 		)
 		for {
 			tags, resp, err = c.gh.Repositories.ListTags(ctx, owner, repo, opts)
 			if err != nil {
-				if resp != nil && waitForRateLimit(resp) {
+				if retries < 3 && resp != nil && waitForRateLimit(resp) {
+					retries++
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("listing tags: %w", err)
 			}
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing tags: %w", err)
 		}
 		for _, t := range tags {
 			all = append(all, Tag{Name: t.GetName()})

@@ -30,9 +30,6 @@ func TestLoad_MissingFileReturnsDefaults(t *testing.T) {
 	if cfg.CommitLookbackDays != def.CommitLookbackDays {
 		t.Errorf("CommitLookbackDays: got %d, want %d", cfg.CommitLookbackDays, def.CommitLookbackDays)
 	}
-	if cfg.StalePRThresholdDays != def.StalePRThresholdDays {
-		t.Errorf("StalePRThresholdDays: got %d, want %d", cfg.StalePRThresholdDays, def.StalePRThresholdDays)
-	}
 	if cfg.DashboardPath != def.DashboardPath {
 		t.Errorf("DashboardPath: got %q, want %q", cfg.DashboardPath, def.DashboardPath)
 	}
@@ -88,7 +85,6 @@ func TestLoad_FullFileUsesProvidedValues(t *testing.T) {
 	yaml := `
 pr_lookback_days: 60
 commit_lookback_days: 120
-stale_pr_threshold_days: 14
 dashboard_path: "site"
 pages_url: "https://example.com"
 update_readme: false
@@ -119,9 +115,6 @@ thresholds:
 	}
 	if cfg.CommitLookbackDays != 120 {
 		t.Errorf("CommitLookbackDays: got %d, want 120", cfg.CommitLookbackDays)
-	}
-	if cfg.StalePRThresholdDays != 14 {
-		t.Errorf("StalePRThresholdDays: got %d, want 14", cfg.StalePRThresholdDays)
 	}
 	if cfg.DashboardPath != "site" {
 		t.Errorf("DashboardPath: got %q, want site", cfg.DashboardPath)
@@ -198,8 +191,8 @@ func TestValidate_FailsOnNegativeLookbackDays(t *testing.T) {
 		{"pr_lookback_days=-1", func(c *Config) { c.PRLookbackDays = -1 }},
 		{"commit_lookback_days=0", func(c *Config) { c.CommitLookbackDays = 0 }},
 		{"commit_lookback_days=-1", func(c *Config) { c.CommitLookbackDays = -1 }},
-		{"stale_pr_threshold_days=0", func(c *Config) { c.StalePRThresholdDays = 0 }},
-		{"stale_pr_threshold_days=-1", func(c *Config) { c.StalePRThresholdDays = -1 }},
+		{"thresholds.stale_pr_days=0", func(c *Config) { c.Thresholds.StalePRDays = 0 }},
+		{"thresholds.stale_pr_days=-1", func(c *Config) { c.Thresholds.StalePRDays = -1 }},
 	}
 
 	for _, tc := range cases {
